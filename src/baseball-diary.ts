@@ -55,6 +55,7 @@ type DiaryFrameDefinition = {
 const storageKey = 'baseball-room:diary-records:v1'
 const startingSeason = 2026
 const weekdayNames = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'] as const
+const publicAssetPath = (path: string) => `${import.meta.env.BASE_URL}${path}`
 
 const escapeHtml = (value: string) => value
   .replaceAll('&', '&amp;')
@@ -105,23 +106,23 @@ const calendarResultLabel = (result: BaseballDiaryResult) => result === 'NO_GAME
 
 /** Status/mode artwork is shared by every record and never stored in localStorage. */
 const diaryIllustrations: Record<string, DiaryIllustrationDefinition> = {
-  'STADIUM:WIN': { label: 'STADIUM WIN', assetPath: '/assets/baseball-cards/baseball_stadium_win.png' },
-  'STADIUM:LOSE': { label: 'STADIUM LOSE', assetPath: '/assets/baseball-cards/baseball_stadium_lose.png' },
-  'STADIUM:DRAW': { label: 'STADIUM DRAW', assetPath: '/assets/baseball-cards/baseball_stadium_draw.png' },
-  'HOME:WIN': { label: 'HOME WIN', assetPath: '/assets/baseball-cards/baseball_home_win.png' },
-  'HOME:LOSE': { label: 'HOME LOSE', assetPath: '/assets/baseball-cards/baseball_home_lose.png' },
-  'HOME:DRAW': { label: 'HOME DRAW', assetPath: '/assets/baseball-cards/baseball_home_draw.png' },
-  'NO_GAME:RAIN': { label: 'RAIN OUT', assetPath: '/assets/baseball-cards/baseball_nogame_rain.png' },
-  'NO_GAME:HEAT': { label: 'HEAT OUT', assetPath: '/assets/baseball-cards/baseball_nogame_heat.png' },
-  'NO_GAME:OTHER': { label: 'GAME OFF', assetPath: '/assets/baseball-cards/baseball_nogame_other.png' },
+  'STADIUM:WIN': { label: 'STADIUM WIN', assetPath: publicAssetPath('assets/baseball-cards/baseball_stadium_win.png') },
+  'STADIUM:LOSE': { label: 'STADIUM LOSE', assetPath: publicAssetPath('assets/baseball-cards/baseball_stadium_lose.png') },
+  'STADIUM:DRAW': { label: 'STADIUM DRAW', assetPath: publicAssetPath('assets/baseball-cards/baseball_stadium_draw.png') },
+  'HOME:WIN': { label: 'HOME WIN', assetPath: publicAssetPath('assets/baseball-cards/baseball_home_win.png') },
+  'HOME:LOSE': { label: 'HOME LOSE', assetPath: publicAssetPath('assets/baseball-cards/baseball_home_lose.png') },
+  'HOME:DRAW': { label: 'HOME DRAW', assetPath: publicAssetPath('assets/baseball-cards/baseball_home_draw.png') },
+  'NO_GAME:RAIN': { label: 'RAIN OUT', assetPath: publicAssetPath('assets/baseball-cards/baseball_nogame_rain.png') },
+  'NO_GAME:HEAT': { label: 'HEAT OUT', assetPath: publicAssetPath('assets/baseball-cards/baseball_nogame_heat.png') },
+  'NO_GAME:OTHER': { label: 'GAME OFF', assetPath: publicAssetPath('assets/baseball-cards/baseball_nogame_other.png') },
 }
 
 /** Every frame uses the same 720 × 925 coordinate system as the card content. */
 const diaryFrames: Record<BaseballDiaryResult, DiaryFrameDefinition> = {
-  WIN: { assetPath: '/assets/baseball-cards/frame_win.png' },
-  LOSE: { assetPath: '/assets/baseball-cards/frame_lose.png' },
-  DRAW: { assetPath: '/assets/baseball-cards/frame_draw.png' },
-  NO_GAME: { assetPath: '/assets/baseball-cards/frame_no_game.png' },
+  WIN: { assetPath: publicAssetPath('assets/baseball-cards/frame_win.png') },
+  LOSE: { assetPath: publicAssetPath('assets/baseball-cards/frame_lose.png') },
+  DRAW: { assetPath: publicAssetPath('assets/baseball-cards/frame_draw.png') },
+  NO_GAME: { assetPath: publicAssetPath('assets/baseball-cards/frame_no_game.png') },
 }
 
 const illustrationFor = (record: BaseballDiaryRecord) => {

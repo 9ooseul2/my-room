@@ -3,6 +3,8 @@ import spanishBookshelfLayerAsset from './assets/spanish-bookshelf-layer.png'
 import spanishDeskLayerAsset from './assets/spanish-desk-layer.png'
 import baseballCorkboardLayerAsset from './assets/baseball-corkboard-layer.png'
 
+const publicAssetPath = (path: string) => `${import.meta.env.BASE_URL}${path}`
+
 export const roomIds = ['baseball', 'spanish', 'knitting'] as const
 
 export type RoomId = (typeof roomIds)[number]
@@ -69,7 +71,7 @@ export const roomDefinitions: readonly RoomDefinition[] = [
     id: 'baseball',
     label: 'Baseball Room',
     number: '01',
-    backgroundAssetPath: '/rooms/baseball-room-bg.png',
+    backgroundAssetPath: publicAssetPath('rooms/baseball-room-bg.png'),
     visualLayers: [
       {
         id: 'corkboard',
@@ -98,7 +100,7 @@ export const roomDefinitions: readonly RoomDefinition[] = [
         // image is intentionally optional until the calendar art is supplied.
         id: 'calendar',
         label: '스페인어 학습 진행 달력',
-        assetPath: '/rooms/spanish-calendar-layer.png',
+        assetPath: publicAssetPath('rooms/spanish-calendar-layer.png'),
       },
       {
         id: 'desk',
@@ -112,7 +114,7 @@ export const roomDefinitions: readonly RoomDefinition[] = [
     id: 'knitting',
     label: 'Knitting Room',
     number: '03',
-    backgroundAssetPath: '/rooms/knitting-room-bg.png',
+    backgroundAssetPath: publicAssetPath('rooms/knitting-room-bg.png'),
     visualLayers: [],
     interactiveObjects: [],
   },
