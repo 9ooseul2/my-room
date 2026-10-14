@@ -5,6 +5,7 @@ import {
   spanishStudyStorageKey,
   type SpanishStudyRecord,
 } from './spanish-study'
+import { trackAnalyticsEvent } from './analytics'
 
 export const spanishCalendarWeekdays = ['LUN', 'MAR', 'MIÉ', 'JUE', 'VIE', 'SÁB', 'DOM'] as const
 
@@ -102,11 +103,13 @@ export class SpanishStudyProgressCalendarController {
 
     this.isOpen = isOpen
     if (!isOpen) {
+      trackAnalyticsEvent('spanish_calendar_closed')
       this.stopCalendarRefresh()
       return
     }
 
     this.displayedMonth = getKoreanCalendarDate()
+    trackAnalyticsEvent('spanish_calendar_opened')
     this.render()
     this.scheduleCalendarRefresh()
   }
@@ -162,11 +165,13 @@ export class SpanishStudyProgressCalendarController {
     const action = target.closest<HTMLElement>('[data-calendar-action]')?.dataset.calendarAction
     if (action === 'previous') {
       this.displayedMonth = shiftSpanishCalendarMonth(this.displayedMonth, -1)
+      trackAnalyticsEvent('spanish_calendar_month_changed', { direction: 'previous' })
       this.render()
     }
 
     if (action === 'next') {
       this.displayedMonth = shiftSpanishCalendarMonth(this.displayedMonth, 1)
+      trackAnalyticsEvent('spanish_calendar_month_changed', { direction: 'next' })
       this.render()
     }
   }

@@ -11,6 +11,7 @@ import {
   type SpanishStudyQuestion,
   type SpanishStudyRecord,
 } from './spanish-study'
+import { trackAnalyticsEvent } from './analytics'
 import { createModalHeaderActions } from './modal-header-actions'
 
 const escapeHtml = (value: string) => value
@@ -84,6 +85,11 @@ export class DailySpanishStudyController {
   setOpen(isOpen: boolean) {
     if (this.isOpen === isOpen) return
 
+    if (!isOpen && this.isOpen && this.activeStudyDate) {
+      if (this.mode === 'review') trackAnalyticsEvent('spanish_study_review_ended', { end_method: 'panel_close' })
+      trackAnalyticsEvent('spanish_study_ended', this.analyticsStudyProgress())
+    }
+
     this.isOpen = isOpen
     if (!isOpen) {
       this.modalActionsRoot.innerHTML = ''
@@ -94,12 +100,23 @@ export class DailySpanishStudyController {
     this.pendingStudyDate = null
     this.mode = 'study'
     this.reviewIndex = 0
+    trackAnalyticsEvent('spanish_study_started', this.analyticsStudyProgress())
     this.render()
   }
 
   private getSession() {
     if (!this.activeStudyDate) throw new Error('A study date is required before rendering the daily study.')
     return this.repository.getSession(this.activeStudyDate)
+  }
+
+  private analyticsStudyProgress() {
+    const session = this.getSession()
+    const questionsSubmitted = submittedCount(session.record, session.studySet)
+    return {
+      study_state: session.record.completed ? 'completed' : questionsSubmitted ? 'in_progress' : 'not_started',
+      questions_submitted: questionsSubmitted,
+      active_mode: this.mode,
+    }
   }
 
   private render() {
@@ -281,7 +298,16 @@ export class DailySpanishStudyController {
     const answer = String(new FormData(form).get('answer') ?? '').trim()
     if (!answer) return
 
+    const questionNumber = session.studySet.questions.findIndex((candidate) => candidate.id === question.id) + 1
+    const answerResult = question.type === 'sentence-writing'
+      ? 'ungraded'
+      : isAutomaticallyCorrect(question, answer) ? 'correct' : 'incorrect'
     this.repository.submitAnswer(this.activeStudyDate, question, answer)
+    trackAnalyticsEvent('spanish_study_answer_submitted', {
+      question_number: questionNumber,
+      question_type: question.type,
+      answer_result: answerResult,
+    })
     this.render()
   }
 
@@ -301,8 +327,10 @@ export class DailySpanishStudyController {
     }
 
     if (action === 'complete') {
+      const session = this.getSession()
       this.repository.completeStudy(this.activeStudyDate)
       this.mode = 'study'
+      trackAnalyticsEvent('spanish_study_completed', { question_count: session.studySet.questions.length })
       this.render()
       return
     }
@@ -310,6 +338,7 @@ export class DailySpanishStudyController {
     if (action === 'review') {
       this.mode = 'review'
       this.reviewIndex = 0
+      trackAnalyticsEvent('spanish_study_review_started')
       this.render()
       return
     }
@@ -329,6 +358,7 @@ export class DailySpanishStudyController {
 
     if (action === 'review-finish') {
       this.mode = 'study'
+      trackAnalyticsEvent('spanish_study_review_ended')
       this.render()
       return
     }

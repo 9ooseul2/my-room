@@ -1,3 +1,5 @@
+import { trackAnalyticsEvent } from './analytics'
+
 export type BaseballDiaryResult = 'WIN' | 'LOSE' | 'DRAW' | 'NO_GAME'
 export type BaseballDiaryWatchingMode = 'STADIUM' | 'HOME'
 export type BaseballDiaryCancellationReason = 'RAIN' | 'HEAT' | 'OTHER'
@@ -222,8 +224,17 @@ export class BaseballDiaryController {
   }
 
   setOpen(isOpen: boolean) {
+    const wasOpen = this.isOpen
+    if (!isOpen && wasOpen) {
+      trackAnalyticsEvent('baseball_diary_closed', {
+        active_view: this.editor ? 'editor' : this.detailId ? 'detail' : 'calendar',
+      })
+    }
     this.isOpen = isOpen
-    if (isOpen) void this.refresh()
+    if (isOpen) {
+      if (!wasOpen) trackAnalyticsEvent('baseball_diary_opened')
+      void this.refresh()
+    }
   }
 
   private async refresh() {
@@ -492,6 +503,7 @@ export class BaseballDiaryController {
     this.editor = record ? { mode: 'edit', date, recordId: record.id } : { mode: 'new', date }
     this.detailId = null
     this.deletingId = null
+    trackAnalyticsEvent('baseball_diary_entry_started', { entry_mode: this.editor.mode })
     this.render()
   }
 
@@ -534,6 +546,7 @@ export class BaseballDiaryController {
       return
     }
     if (action === 'close-editor') {
+      if (this.editor) trackAnalyticsEvent('baseball_diary_entry_cancelled', { entry_mode: this.editor.mode })
       this.editor = null
       this.render()
       return
@@ -555,6 +568,7 @@ export class BaseballDiaryController {
         this.detailId = null
         this.deletingId = null
         this.notice = '기록을 삭제했습니다.'
+        trackAnalyticsEvent('baseball_diary_entry_deleted')
       } catch (error) {
         this.notice = error instanceof Error ? error.message : '기록을 삭제하지 못했습니다.'
       }
@@ -617,7 +631,8 @@ export class BaseballDiaryController {
     if (result !== 'NO_GAME' && !isWatchingMode(watchingMode)) return
     if (result === 'NO_GAME' && !isCancellationReason(cancellationReason)) return
 
-    const existing = this.editor.mode === 'edit' ? this.recordForId(this.editor.recordId ?? null) : null
+    const entryMode = this.editor.mode
+    const existing = entryMode === 'edit' ? this.recordForId(this.editor.recordId ?? null) : null
     const now = new Date().toISOString()
     const record: BaseballDiaryRecord = {
       id: existing?.id ?? crypto.randomUUID(),
@@ -642,6 +657,12 @@ export class BaseballDiaryController {
       // The inventory and statistics immediately reflect a successful save;
       // keep the diary clear of a persistent success toast.
       this.notice = ''
+      trackAnalyticsEvent('baseball_diary_entry_saved', {
+        entry_mode: entryMode,
+        game_result: result,
+        viewing_mode: result === 'NO_GAME' ? 'not_applicable' : watchingMode,
+        cancellation_reason: result === 'NO_GAME' ? cancellationReason : 'not_applicable',
+      })
     } catch (error) {
       this.notice = error instanceof Error ? error.message : '기록을 저장하지 못했습니다.'
     }
@@ -658,6 +679,7 @@ export class BaseballDiaryController {
     }
     if (this.editor) {
       event.preventDefault()
+      trackAnalyticsEvent('baseball_diary_entry_cancelled', { entry_mode: this.editor.mode })
       this.editor = null
       this.render()
       return

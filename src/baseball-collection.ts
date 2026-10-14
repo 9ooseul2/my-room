@@ -1,3 +1,5 @@
+import { trackAnalyticsEvent } from './analytics'
+
 export type BaseballUniformKind = 'HOME' | 'AWAY' | 'SPECIAL'
 export type BaseballUniformMarking = 'NO MARKING' | 'MARKING'
 
@@ -143,12 +145,17 @@ export class BaseballCollectionController {
   }
 
   setOpen(isOpen: boolean) {
+    const wasOpen = this.isOpen
+    if (!isOpen && wasOpen) {
+      trackAnalyticsEvent('collection_closed', { active_view: this.editorMode ? 'editor' : this.category })
+    }
     this.isOpen = isOpen
     if (!isOpen) {
       this.releasePhotoUrl()
       return
     }
 
+    if (!wasOpen) trackAnalyticsEvent('collection_opened')
     void this.refresh()
   }
 
@@ -399,6 +406,7 @@ export class BaseballCollectionController {
       this.editorMode = 'add'
       this.editingId = null
       this.deletingId = null
+      trackAnalyticsEvent('collection_entry_started', { entry_mode: 'add' })
       this.render()
       return
     }
@@ -407,11 +415,13 @@ export class BaseballCollectionController {
       this.editorMode = 'edit'
       this.editingId = uniformId
       this.deletingId = null
+      trackAnalyticsEvent('collection_entry_started', { entry_mode: 'edit' })
       this.render()
       return
     }
 
     if (action === 'close-editor') {
+      if (this.editorMode) trackAnalyticsEvent('collection_entry_cancelled', { entry_mode: this.editorMode, close_method: 'button' })
       this.editorMode = null
       this.editingId = null
       this.render()
@@ -437,6 +447,7 @@ export class BaseballCollectionController {
         this.deletingId = null
         this.selectedId = this.selectedId === uniformId ? null : this.selectedId
         await this.refresh()
+        trackAnalyticsEvent('collection_entry_deleted')
       } catch (error) {
         this.deletingId = null
         this.notice = error instanceof Error ? error.message : '유니폼을 삭제하지 못했습니다.'
@@ -457,7 +468,8 @@ export class BaseballCollectionController {
     const markingValue = values.get('marking')
     const size = valueFrom(values, 'size')
     const fileValue = values.get('image')
-    const previous = this.editorMode === 'edit' ? this.editingUniform : null
+    const entryMode = this.editorMode
+    const previous = entryMode === 'edit' ? this.editingUniform : null
 
     if (!name || !season || !size || !isUniformKind(kindValue) || !isUniformMarking(markingValue)) {
       this.notice = '필수 항목을 모두 입력해주세요.'
@@ -507,6 +519,11 @@ export class BaseballCollectionController {
       this.editingId = null
       this.selectedId = uniform.id
       await this.refresh(uniform.id)
+      trackAnalyticsEvent('collection_entry_saved', {
+        entry_mode: entryMode ?? 'add',
+        uniform_kind: kindValue,
+        has_marking: markingValue === 'MARKING',
+      })
     } catch (error) {
       this.notice = error instanceof Error ? error.message : '유니폼을 저장하지 못했습니다.'
       this.render()

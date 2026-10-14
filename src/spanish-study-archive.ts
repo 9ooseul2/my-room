@@ -5,6 +5,7 @@ import {
   type SpanishStudyRecord,
   SpanishStudyRepository,
 } from './spanish-study'
+import { trackAnalyticsEvent } from './analytics'
 import { createModalHeaderActions } from './modal-header-actions'
 import { renderSpanishStudyReviewDetails } from './spanish-study-ui'
 
@@ -61,15 +62,20 @@ export class SpanishStudyArchiveController {
 
   setOpen(isOpen: boolean) {
     const isOpening = isOpen && !this.isOpen
+    const isClosing = !isOpen && this.isOpen
     this.isOpen = isOpen
 
     if (!isOpen) {
+      if (isClosing) trackAnalyticsEvent('spanish_archive_closed', { archive_view: this.view })
       this.resetNavigation()
       this.modalActionsRoot.innerHTML = ''
       return
     }
 
-    if (isOpening) this.resetNavigation()
+    if (isOpening) {
+      this.resetNavigation()
+      trackAnalyticsEvent('spanish_archive_opened')
+    }
     this.render()
   }
 
@@ -230,6 +236,7 @@ export class SpanishStudyArchiveController {
       this.view = 'days'
       this.selectedWeekStart = weekStart
       this.selectedStudyDate = null
+      trackAnalyticsEvent('spanish_archive_week_opened')
       this.render()
       return
     }
@@ -239,6 +246,7 @@ export class SpanishStudyArchiveController {
       if (!studyDate) return
       this.view = 'review'
       this.selectedStudyDate = studyDate
+      trackAnalyticsEvent('spanish_archive_review_opened')
       this.render()
       return
     }

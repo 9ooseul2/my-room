@@ -1,4 +1,5 @@
 import './style.css'
+import { trackAnalyticsEvent } from './analytics'
 import characterSprites from './assets/room-character-sprites.png'
 import spanishArchiveBookAsset from './assets/spanish-archive-book.png'
 import { BaseballCollectionController } from './baseball-collection'
@@ -433,10 +434,31 @@ const roomView = new RoomViewController(roomPage, (state) => {
   }
 })
 
-baseballDiary.setCloseHandler(() => roomView.closeObject())
+baseballDiary.setCloseHandler(() => {
+  const { selectedRoom, selectedObject } = roomView.state
+  if (selectedRoom && selectedObject) {
+    trackAnalyticsEvent('room_feature_closed', {
+      room_id: selectedRoom,
+      feature_id: selectedObject,
+      close_method: 'escape',
+    })
+  }
+  roomView.closeObject()
+})
 
 roomSelection = new RoomSelectionController(roomMap, (room) => roomView.selectRoom(room.id))
 const characterMovement = new CharacterMovementController(character, sparkleLayer)
+
+const trackRoomFeatureClosed = (closeMethod: 'button' | 'backdrop' | 'escape' | 'overview') => {
+  const { selectedRoom, selectedObject } = roomView.state
+  if (!selectedRoom || !selectedObject) return
+
+  trackAnalyticsEvent('room_feature_closed', {
+    room_id: selectedRoom,
+    feature_id: selectedObject,
+    close_method: closeMethod,
+  })
+}
 
 document.querySelectorAll<HTMLImageElement>('[data-room-asset]').forEach((image) => {
   const setAssetState = (state: 'ready' | 'missing') => {
@@ -486,6 +508,7 @@ roomSelectorButtons.forEach((button) => {
     if (!roomId || !roomDefinitions.some((room) => room.id === roomId)) return
 
     roomSelection?.select(roomId as RoomDefinition['id'])
+    trackAnalyticsEvent('room_selected', { room_id: roomId })
   })
 })
 
@@ -555,33 +578,41 @@ detailPanel.addEventListener('click', (event) => {
   const action = target.closest<HTMLElement>('[data-room-action]')?.dataset.roomAction
 
   if (action === 'close-corkboard') {
+    trackRoomFeatureClosed('button')
     roomView.closeObject()
     return
   }
 
   if (action === 'close-furniture-panel') {
+    trackRoomFeatureClosed('button')
     roomView.closeObject()
     return
   }
 
   if (action === 'back-to-overview') {
+    trackRoomFeatureClosed('overview')
     roomView.backToOverview()
     return
   }
 
   const furniturePanel = target.closest<HTMLElement>('[data-room-furniture-panel]')
   if (furniturePanel && !target.closest<HTMLElement>('.room-furniture-panel__content')) {
+    trackRoomFeatureClosed('backdrop')
     roomView.closeObject()
     return
   }
 
   const furniture = furnitureHitAreaFromTarget(target)
   if (furniture) {
+    const roomId = roomView.state.selectedRoom
+    if (roomId) trackAnalyticsEvent('room_feature_opened', { room_id: roomId, feature_id: furniture.furnitureId })
     roomView.selectObject(furniture.furnitureId)
     return
   }
 
   if (target.closest<HTMLElement>('[data-room-object="corkboard"]')) {
+    const roomId = roomView.state.selectedRoom
+    if (roomId) trackAnalyticsEvent('room_feature_opened', { room_id: roomId, feature_id: 'corkboard' })
     roomView.selectObject('corkboard')
   }
 })
@@ -593,6 +624,8 @@ detailPanel.addEventListener('keydown', (event) => {
   const furniture = furnitureHitAreaFromTarget(target)
   if (furniture) {
     event.preventDefault()
+    const roomId = roomView.state.selectedRoom
+    if (roomId) trackAnalyticsEvent('room_feature_opened', { room_id: roomId, feature_id: furniture.furnitureId })
     roomView.selectObject(furniture.furnitureId)
     return
   }
@@ -600,6 +633,8 @@ detailPanel.addEventListener('keydown', (event) => {
   if (!target.closest<HTMLElement>('[data-room-object="corkboard"]')) return
 
   event.preventDefault()
+  const roomId = roomView.state.selectedRoom
+  if (roomId) trackAnalyticsEvent('room_feature_opened', { room_id: roomId, feature_id: 'corkboard' })
   roomView.selectObject('corkboard')
 })
 
@@ -607,6 +642,7 @@ window.addEventListener('keydown', (event) => {
   if (event.key !== 'Escape' || roomPage.dataset.view !== 'furniture') return
 
   event.preventDefault()
+  trackRoomFeatureClosed('escape')
   roomView.closeObject()
 })
 
