@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:study-calendar": "rolldown src/spanish-study-progress-calendar.test.ts --platform node --format esm --file /tmp/baseballroom-study-calendar.test.mjs && node /tmp/baseballroom-study-calendar.test.mjs"
   },
   "devDependencies": {
     "typescript": "~6.0.2",
